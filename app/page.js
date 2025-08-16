@@ -424,7 +424,7 @@ function page() {
         {/* Header */}
         <header className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Chat Playground</h1>
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Byte-Chat</h1>
             <p className="text-zinc-400 text-sm md:text-base mt-1">Type a message and get a response or a streaming reply.</p>
           </div>
           
@@ -511,7 +511,7 @@ function page() {
               </div>
               <div className="p-5 md:p-6">
                 <div className="rounded-xl bg-zinc-900/70 border border-zinc-800 p-4">
-                  <p className="text-zinc-200 text-base leading-relaxed whitespace-pre-wrap text-center">
+                  <p className="text-zinc-200 text-base leading-relaxed whitespace-pre-wrap ">
                     {streamdata}
                   </p>
                 </div>
