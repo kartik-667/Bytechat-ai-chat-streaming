@@ -5,7 +5,9 @@ import React, { useState } from 'react'
 function page() {
   const [loading, setloading] = useState(false)
   const [message, setmessage] = useState("")
-  const [response, setresponse] = useState("hey wassup guys")
+  const [response, setresponse] = useState("Send a message to show result")
+  const [streamdata, setstreamdata] = useState("")
+  const [streaming,setstreaming]=useState(false)
 
   async function getdata(){
     let res1=await fetch("/api/test")
@@ -67,6 +69,151 @@ function page() {
 
   }
 
+  const handleStreamchat=async ()=>{
+    console.log("stream fnc called");
+    
+    setstreaming(true)
+    setstreamdata("")
+
+    try {
+      const res=await fetch("/api/chat-stream",{
+        method:"POST",
+        body:JSON.stringify({message}),
+        headers:{
+          "Content-Type":"application/json"
+        }
+      })
+
+      //now res is getting stream not text
+      const reader=res.body.getReader()
+      const decoder=new TextDecoder()
+
+      
+      while(true){
+        const {done,value}=await reader.read()
+        if(done) break;
+
+        const chunk=decoder.decode(value)
+        const lines=chunk.split("\n")
+        lines.forEach((line)=>{
+          if(line.startsWith("data: ")){
+
+            const data=JSON.parse(line.slice(6))
+            setstreamdata((prev)=> prev+data.content) //this is how to access the prev value of a state using callback
+          }
+
+        })
+
+      }
+
+      
+    } catch (error) {
+      console.log("error",error);
+      setstreamdata("error"+error)
+      
+    }finally{
+      setstreaming(false)
+    }
+
+  }
+
+//   const handleStreamchat = async () => {
+//   console.log("stream fnc called");
+
+//   setstreaming(true);
+//   setstreamdata("");
+
+//   try {
+//     const res = await fetch("/api/chat-stream", {
+//       method: "POST",
+//       body: JSON.stringify({ message }),
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//     });
+
+//     const reader = res.body.getReader();
+//     const decoder = new TextDecoder();
+//     let buffer = "";
+
+//     while (true) {
+//       const { done, value } = await reader.read();
+//       if (done) break;
+
+//       buffer += decoder.decode(value, { stream: true });
+
+//       // Split SSE chunks on double newline
+//       const parts = buffer.split("\n\n");
+
+//       // Keep last partial chunk in buffer
+//       buffer = parts.pop();
+
+//       for (const part of parts) {
+//         if (part.startsWith("data:")) {
+//           const jsonStr = part.slice(5).trim();
+//           if (jsonStr && jsonStr !== "[DONE]") {
+//             try {
+//               const data = JSON.parse(jsonStr);
+//               setstreamdata((prev) => prev + data.content); // ✅ append to state
+//             } catch (e) {
+//               console.error("JSON parse failed:", e, "for:", jsonStr);
+//             }
+//           }
+//         }
+//       }
+//     }
+//   } catch (error) {
+//     console.log("error", error);
+//     setstreamdata("Error: " + error.message);
+//   } finally {
+//     setstreaming(false);
+//   }
+// };
+
+//   async function handleStreamchat() {
+//       console.log("stream fnc called");
+    
+//     setstreaming(true)
+//     setstreamdata("")
+//     try {
+//       const res = await fetch("/api/chat-stream", {
+//     method: "POST",
+//     body: JSON.stringify({ message }),
+//   });
+
+//   const reader = res.body.getReader();
+//   const decoder = new TextDecoder();
+//   let buffer = "";
+
+//   while (true) {
+//     const { done, value } = await reader.read();
+//     if (done) break;
+
+//     buffer += decoder.decode(value, { stream: true });
+
+//     buffer.split("\n\n").forEach((part) => {
+//       if (part.startsWith("data:")) {
+//         const jsonStr = part.replace("data: ", "");
+//         try {
+//           const data = JSON.parse(jsonStr);
+//           // console.log("Streamed content:", data.content);
+//           setstreamdata((prev)=> prev+data.content)
+//         } 
+//       }catch (error) {
+//       console.log("error",error);
+//       setstreamdata("error"+error)
+      
+//     }finally{
+//       setstreaming(false)
+//     }
+//     });
+//   }
+      
+//     } 
+  
+// }
+
+
   return (
     <div>
       <Link href="/route1">
@@ -82,7 +229,10 @@ function page() {
         <br />
         <textarea rows={5} cols={20} placeholder='enter your message here ' name="" id="t1" value={message} onChange={(e)=> setmessage(e.target.value)} className='bg-slate-800'></textarea>
         <br />
-         <button onClick={handleChat} className='bg-white text-black cursor-pointer m-2 p-2 rounded-md '>Chat now </button>
+         <button onClick={()=>{
+          handleChat()
+          handleStreamchat()
+         }} className='bg-white text-black cursor-pointer m-2 p-2 rounded-md '>Chat now </button>
       </div>
 
       {loading && (
@@ -91,8 +241,20 @@ function page() {
 
       {response && (
         <div className='border-red-400'>
-          <h1 className='text-4xl p-3 border-1 min-w-3xs'>{response}</h1>
+          <h1 className='text-4xl p-3 border-t-2 border-b-2'>{response}</h1>
         </div>
+      )}
+
+      {streaming && (
+        <h1>Loading streaming response...</h1>
+      )}
+
+      {streamdata && (
+        <div className='border-red-400'>
+          <h1 className='text-4xl'>Streaming data is : </h1>
+          <h1 className='text-2xl p-3 border-1  text-center'>{streamdata}</h1>
+        </div>
+
       )}
       
     </div>
